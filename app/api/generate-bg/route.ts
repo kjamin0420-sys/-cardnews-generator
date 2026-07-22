@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 60; // Vercel Hobby 플랜 상한. 이미지 1장 medium ≈ 55초
 
 const OPENAI_GEN_URL = "https://api.openai.com/v1/images/generations";
 const IMAGE_MODEL = "gpt-image-2"; // DetailCraft와 동일 (변경 금지)
