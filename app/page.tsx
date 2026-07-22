@@ -56,6 +56,7 @@ export default function Home() {
   const [source, setSource] = useState("");
   const [keyword, setKeyword] = useState("");
   const [handle, setHandle] = useState("@my_account");
+  const [productImage, setProductImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [ungrounded, setUngrounded] = useState(false); // 자료 없이 일반지식으로 작성됨
   const [deckId, setDeckId] = useState<string | null>(null);
@@ -224,6 +225,31 @@ export default function Home() {
     }
   }
 
+  // 제품 이미지 업로드 → 최대 1024px로 축소해 data URL로 보관
+  async function handleProductUpload(file: File) {
+    try {
+      const url = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      const max = 1024;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext("2d")?.drawImage(img, 0, 0, c.width, c.height);
+      // 투명 배경 보존 위해 PNG
+      setProductImage(c.toDataURL("image/png"));
+    } catch {
+      setError("이미지를 읽지 못했어요. 다른 파일로 시도해주세요.");
+    }
+  }
+
   // 슬라이드 1장 AI 배경 생성 — 그 슬라이드 내용(visual)으로 그린다
   async function generateBg(slide: SlideData) {
     // 연출 지시가 없으면 제목을 피사체 힌트로 사용
@@ -233,7 +259,7 @@ export default function Home() {
       const res = await fetch("/api/generate-bg", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visual, tone: slide.bg }),
+        body: JSON.stringify({ visual, tone: slide.bg, productImage: productImage ?? undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "배경 생성 실패");
@@ -551,6 +577,49 @@ export default function Home() {
               />
               <p className="mt-1 text-[11px]" style={{ color: "var(--muted)" }}>
                 마지막 장에 표시됩니다.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-[13px] font-semibold">
+                제품 이미지 <span className="font-normal" style={{ color: "var(--muted)" }}>(선택)</span>
+              </label>
+              {productImage ? (
+                <div className="flex items-center gap-3">
+                  <div
+                    className="shrink-0 overflow-hidden rounded-lg border"
+                    style={{ width: 56, height: 56, borderColor: "var(--line)", background: "var(--bg)" }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={productImage} alt="제품" className="h-full w-full object-contain" />
+                  </div>
+                  <button
+                    onClick={() => setProductImage(null)}
+                    className="text-[12px] underline"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    제품 이미지 제거
+                  </button>
+                </div>
+              ) : (
+                <label
+                  className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed py-3 text-[12.5px] transition hover:border-[var(--brand)]"
+                  style={{ borderColor: "var(--line)", color: "var(--muted)" }}
+                >
+                  📦 제품 사진 올리기
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleProductUpload(f);
+                    }}
+                  />
+                </label>
+              )}
+              <p className="mt-1 text-[11px]" style={{ color: "var(--muted)" }}>
+                올리면 배경에 <b>실제 제품</b>이 그대로 들어갑니다 (배경은 AI가 자동 제거).
               </p>
             </div>
 

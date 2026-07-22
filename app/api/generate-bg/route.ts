@@ -4,6 +4,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60; // Vercel Hobby 플랜 상한. 이미지 1장 medium ≈ 55초
 
 const OPENAI_GEN_URL = "https://api.openai.com/v1/images/generations";
+const OPENAI_EDIT_URL = "https://api.openai.com/v1/images/edits";
 const IMAGE_MODEL = "gpt-image-2"; // DetailCraft와 동일 (변경 금지)
 
 type Tone = "ink" | "cream" | "accent";
@@ -66,6 +67,31 @@ function sanitizeVisual(visual: string): string {
     || "a modern workspace interior, natural light";
 }
 
+// 제품 이미지가 있을 때: 레퍼런스 제품을 "그대로" 살려 장면에 배치
+function buildProductPrompt(visual: string, tone: Tone) {
+  return [
+    "Use the product shown in the reference image as the hero of a photograph.",
+    "CRITICAL: keep the product's exact shape, packaging, colors, logo and labels — do NOT redesign or invent a different product.",
+    "Remove the product's original background and place it naturally into this scene:",
+    `${visual}.`,
+    TONE_LIGHT[tone],
+    "The product sits in the upper or central area; keep a large empty area in the lower half for text overlay.",
+    "Realistic product photography, soft natural lighting, subtle shadow under the product.",
+    "NO text, NO words, NO letters, NO logos other than the product's own, NO watermarks, NO UI.",
+    "Square 1:1 framing, full bleed.",
+  ].join(" ");
+}
+
+// data URL(base64) → { blob, ext }
+function dataUrlToBlob(dataUrl: string): { blob: Blob; ext: string } | null {
+  const m = dataUrl.match(/^data:(image\/(png|jpe?g|webp));base64,(.+)$/);
+  if (!m) return null;
+  const mime = m[1];
+  const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg";
+  const bytes = Buffer.from(m[3], "base64");
+  return { blob: new Blob([new Uint8Array(bytes)], { type: mime }), ext };
+}
+
 function buildPrompt(visual: string, tone: Tone) {
   return [
     // ① 피사체 = 슬라이드 내용 (가장 중요)
@@ -90,7 +116,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "OPENAI_API_KEY 미설정" }, { status: 500 });
     }
 
-    const { visual, tone } = (await req.json()) as { visual?: string; tone?: Tone };
+    const { visual, tone, productImage } = (await req.json()) as {
+      visual?: string;
+      tone?: Tone;
+      productImage?: string; // 제품 레퍼런스 (data URL)
+    };
     const subject = (visual ?? "").trim();
     if (!subject) {
       return NextResponse.json(
@@ -101,24 +131,43 @@ export async function POST(req: Request) {
     const toneKey: Tone = tone === "ink" || tone === "cream" || tone === "accent" ? tone : "ink";
     const safeSubject = sanitizeVisual(subject);
 
+    // 제품 이미지가 있으면 edits 엔드포인트로 레퍼런스 제품을 살려 합성
+    const product = productImage ? dataUrlToBlob(productImage) : null;
+
     // gpt-image-2는 분당 5장 제한 → 429면 안내된 시간만큼 기다렸다 재시도
     let resp: Response | null = null;
     let lastErr = "";
     for (let attempt = 1; attempt <= 4; attempt++) {
-      resp = await fetch(OPENAI_GEN_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: IMAGE_MODEL,
-          prompt: buildPrompt(safeSubject, toneKey),
-          n: 1,
-          size: "1024x1024",
-          quality: "medium",
-        }),
-      });
+      if (product) {
+        // /v1/images/edits (multipart) — 레퍼런스 제품 포함
+        const form = new FormData();
+        form.append("model", IMAGE_MODEL);
+        form.append("prompt", buildProductPrompt(safeSubject, toneKey));
+        form.append("size", "1024x1024");
+        form.append("quality", "medium");
+        form.append("n", "1");
+        form.append("image[]", product.blob, `product.${product.ext}`);
+        resp = await fetch(OPENAI_EDIT_URL, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}` },
+          body: form,
+        });
+      } else {
+        resp = await fetch(OPENAI_GEN_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: IMAGE_MODEL,
+            prompt: buildPrompt(safeSubject, toneKey),
+            n: 1,
+            size: "1024x1024",
+            quality: "medium",
+          }),
+        });
+      }
       if (resp.ok) break;
 
       const body = await resp.text().catch(() => "");
