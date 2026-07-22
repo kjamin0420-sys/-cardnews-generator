@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f6f6f4;
+  --panel: #ffffff;
+  --ink: #1a1713;
+  --muted: #6f6759;
+  --line: #e7e3da;
+  --brand: #ff6b2c;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

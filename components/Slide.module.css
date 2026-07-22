@@ -1,0 +1,199 @@
+/* 1080x1080 슬라이드 — 레이어(배경/텍스트/장식)를 쌓아 렌더링.
+   이 노드를 그대로 html-to-image로 캡처하면 인스타 규격 PNG가 나온다. */
+
+.slide {
+  width: 1080px;
+  height: 1080px;
+  position: relative;
+  overflow: hidden;
+  color: #f4eee2;
+  font-family: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo",
+    "Malgun Gothic", sans-serif;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+.bgInk {
+  background: radial-gradient(120% 100% at 20% 0%, #2a2117 0%, #14100b 60%, #0d0a06 100%);
+}
+.bgCream {
+  background: #f4eee2;
+}
+.noise {
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px);
+  background-size: 5px 5px;
+}
+
+.pad {
+  position: absolute;
+  inset: 96px 90px;
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+}
+.padCenter {
+  justify-content: center;
+}
+
+.bar {
+  height: 12px;
+  width: 220px;
+  border-radius: 999px;
+  margin-bottom: 60px;
+}
+
+.kicker {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.huge {
+  font-size: 112px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+  white-space: pre-line;
+}
+.big {
+  font-size: 86px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  white-space: pre-line;
+}
+.num {
+  font-size: 240px;
+  font-weight: 800;
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.lead {
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+/* 톤별 텍스트 컬러 */
+.onInk .lead {
+  color: #c9bfb0;
+}
+.onCream .lead {
+  color: #6b6157;
+}
+
+/* ===== 사진 메인 레이아웃 (레퍼런스 스타일: 이미지 꽉 + 하단 텍스트) ===== */
+/* 바닥에서 위로 올라가는 스크림 — 사진은 살리고 하단 글자만 읽히게 */
+.scrimBottom {
+  background: linear-gradient(
+    0deg,
+    rgba(8, 6, 4, 0.92) 0%,
+    rgba(8, 6, 4, 0.62) 28%,
+    rgba(8, 6, 4, 0.12) 56%,
+    rgba(8, 6, 4, 0) 76%
+  );
+}
+
+.photoTop {
+  position: absolute;
+  top: 78px;
+  left: 84px;
+  right: 84px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 3;
+}
+
+.photoBottom {
+  position: absolute;
+  left: 84px;
+  right: 84px;
+  bottom: 90px;
+  display: flex;
+  flex-direction: column;
+  z-index: 3;
+}
+
+.pEyebrow {
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.55);
+}
+
+.pBar {
+  width: 68px;
+  height: 8px;
+  border-radius: 999px;
+  margin-bottom: 26px;
+}
+
+.pIndex {
+  align-self: flex-start;
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 10px 20px;
+  border-radius: 999px;
+  margin-bottom: 24px;
+  letter-spacing: 0.02em;
+}
+
+.pTitle {
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 1.14;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  white-space: pre-line;
+  text-shadow: 0 2px 26px rgba(0, 0, 0, 0.55);
+}
+
+.pBody {
+  font-size: 33px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: pre-line;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5);
+  margin-top: 20px;
+}
+
+.pHandle {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 32px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 28px;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
+}
