@@ -144,7 +144,7 @@ export async function POST(req: Request) {
         form.append("model", IMAGE_MODEL);
         form.append("prompt", buildProductPrompt(safeSubject, toneKey));
         form.append("size", "1024x1024");
-        form.append("quality", "medium");
+        form.append("quality", "low"); // 제품 합성(edits)은 무거워서 60초 넘김 → low로 여유 확보
         form.append("n", "1");
         form.append("image[]", product.blob, `product.${product.ext}`);
         resp = await fetch(OPENAI_EDIT_URL, {
